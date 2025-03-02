@@ -1,5 +1,6 @@
 {
     "token": "YOUR_TOKEN",
     "clientId": "YOUR_CLIENT_ID",
-    "guildId": "YOUR_GUILD_ID"
+    "guildId": "YOUR_GUILD_ID",
+    "hypixel-api-key": "YOUR_HYPIXEL_API_KEY"
 }

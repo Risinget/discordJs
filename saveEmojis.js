@@ -7,7 +7,7 @@ const JSZip = require("jszip");
 const fs = require("fs");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { EmbedBuilder } = require("discord.js");
-const { create } = require("domain");
+const mcs = require("node-mcstatus");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildEmojisAndStickers],
@@ -60,6 +60,17 @@ const embedCommand = new SlashCommandBuilder()
   )
   .toJSON(); // Convertir a JSON
 
+
+const emojiCommand = new SlashCommandBuilder()
+.setName("emoji")
+.setDescription("Consulta un emoji")
+.addStringOption((option) =>
+  option
+    .setName("id")
+    .setDescription("El emoji que deseas consultar")
+    .setRequired(true)
+)
+.toJSON(); // Convertir a JSON
 const commands = [
   {
     name: "download_emojis",
@@ -71,7 +82,8 @@ const commands = [
   },
   serverCommand, // Incluir el comando definido por SlashCommandBuilder
   embedCommand,
-  eCommand
+  eCommand,
+  emojiCommand,
 ];
 
 const rest = new REST({ version: "9" }).setToken(token);
@@ -154,11 +166,79 @@ client.on("interactionCreate", async (interaction) => {
       });
     } else if (commandName === "server") {
       const ip = interaction.options.getString("ip");
-      const port = interaction.options.getInteger("port") || "no proporcionado";
+      const port = interaction.options.getInteger("port") || 25565;
 
-      await interaction.reply(
-        `Información del servidor: IP ${ip}, Port ${port}`
-      );
+      const options = { query: true };
+      mcs
+        .statusJava(ip, port, options)
+        .then(async (result) => {
+          
+          if (result.online == true) {
+              console.log("Server is online");
+              console.log("The server has " + result.players.online + " players online");
+              const embed = new EmbedBuilder()
+                .setTitle(result.host.toUpperCase())
+                .setURL("https://mcstatus.io/status/java/"+result.host)
+                .setDescription("**El servidor está online** ✅")
+                .addFields(
+                  {
+                    name: "Jugadores:",
+                    value: result.players.list.length > 0 ? result.players.list.join("\n") : "No es posible mostrar los jugadores en línea.",
+                    inline: true,
+                  },
+                  {
+                    name: "Total de Jugadores:",
+                    value: `${result.players.online}/${result.players.max}`,
+                    inline: true,
+                  },
+                  {
+                    name: "Version:",
+                    value: result.version.name_raw,
+                    inline: false,
+                  },
+                  {
+                    name: "Dirección IP:",
+                    value: result.ip_address,
+                    inline: true,
+                  },
+                  {
+                    name: "Puerto:",
+                    value: String(result.port),
+                    inline: true,
+                  }
+                )
+                .setImage(
+                  "https://api.mcstatus.io/v2/widget/java/" + result.host
+                )
+                .setThumbnail("https://api.mcstatus.io/v2/icon/" + result.host)
+                .setColor("#f5006a");
+            await interaction.reply({ embeds: [embed] });
+          } else {
+            console.log("Server is offline");
+            const embed = new EmbedBuilder()
+              .setTitle(result.host.toUpperCase())
+              .setURL("https://mcstatus.io/status/java/" + result.host)
+              .setDescription("**El servidor está offline** ❌")
+              .addFields(
+                {
+                  name: "Puerto:",
+                  value: String(result.port),
+                  inline: true,
+                }
+              )
+              .setImage("https://api.mcstatus.io/v2/widget/java/" + result.host)
+              .setThumbnail("https://api.mcstatus.io/v2/icon/" + result.host)
+              .setColor("#f5006a");
+            await interaction.reply({ embeds: [embed] });
+          }
+          
+        })
+        .catch((error) => {
+          console.log(error);
+          
+        });
+
+      
     } else if (commandName === "embed") {
       const title = interaction.options.getString("titulo");
       const embed = new EmbedBuilder()
@@ -166,6 +246,8 @@ client.on("interactionCreate", async (interaction) => {
         .setDescription("Este es un mensaje embed de ejemplo.")
         .setColor(0x0099ff)
         .setTimestamp();
+
+      
 
       await interaction.reply({ embeds: [embed] });
     } else if (commandName === "e") {
@@ -209,7 +291,18 @@ client.on("interactionCreate", async (interaction) => {
         content: `¡Emoji subido al servidor con éxito!`,
         files: [{ attachment: buffer, name: fileName }],
       });
-    }else {
+    }else if (commandName == 'emoji'){
+      const emojiId = interaction.options.getString("id");
+      const emoji = client.emojis.cache.find((emoji) => emoji.id === emojiId);
+      console.log(emoji);
+      
+      await interaction.reply(emojiId);
+
+    } else if (commandName == 'hypixel'){
+    
+    
+    }
+    else{
       await interaction.reply({
         content: "Comando incorrecto",
       });
