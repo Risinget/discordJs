@@ -7,6 +7,7 @@ const JSZip = require("jszip");
 const fs = require("fs");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { EmbedBuilder } = require("discord.js");
+const { create } = require("domain");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildEmojisAndStickers],
@@ -177,7 +178,7 @@ client.on("interactionCreate", async (interaction) => {
       // Verificar si el formato especificado es válido
       if (format && !formats.includes(format)) {
         return interaction.reply(
-          "Formato no soportado. Usa uno de los siguientes: png, webp, jpg, jpeg, gif."
+          "Formato no soportado. Usa uno de los siguientes: png, webp, jpg, jpeg, gif. <:mc:1345561069258805269>"
         );
       }
       let emojiUrl;
@@ -204,9 +205,8 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
       
-
       await interaction.reply({
-        content: `Emoji descargado:`,
+        content: `¡Emoji subido al servidor con éxito!`,
         files: [{ attachment: buffer, name: fileName }],
       });
     }else {
